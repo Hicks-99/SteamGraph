@@ -95,7 +95,7 @@ export async function checkDatabase(): Promise<boolean> {
 /**
  * Insert tags in a single transaction into the database.
  * If the tag already exists, it will be updated.
- * Returns true if the operation was successful, otherwise it will ROLLBACK the transaction and return false.
+ * Returns true if the operation was successful, otherwise it will return false.
  */
 export async function insertOrUpdateTags(tags: { id: number; name: string }[]): Promise<boolean> {
     const query = `
@@ -106,20 +106,13 @@ export async function insertOrUpdateTags(tags: { id: number; name: string }[]): 
             name = EXCLUDED.name
     `;
 
-    const client = await pool.connect();
     try {
-        await client.query('BEGIN');
+        await pool.query(query, [tags.map((tag) => tag.id), tags.map((tag) => tag.name)]);
 
-        await client.query(query, [tags.map((tag) => tag.id), tags.map((tag) => tag.name)]);
-
-        await client.query('COMMIT');
         return true;
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Error inserting or updating tags:', error);
         return false;
-    } finally {
-        client.release();
     }
 }
 
